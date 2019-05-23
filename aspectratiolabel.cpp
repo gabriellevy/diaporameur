@@ -48,7 +48,8 @@ int AspectRatioLabel::widthForHeight( int hauteurFinale ) const
 
 QSize AspectRatioLabel::sizeHint() const
 {
-    int h = this->maximumHeight();
+    //int h = this->maximumHeight();
+    int h = this->height();
     return QSize( this->widthForHeight(h), h );
 }
 

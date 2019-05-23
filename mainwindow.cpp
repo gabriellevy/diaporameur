@@ -14,8 +14,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /*s_TailleImageMax.setWidth(ui->imageLabel->width());
     s_TailleImageMax.setHeight(ui->imageLabel->height());*/
-    s_TailleImageMax.setWidth(1123);
-    s_TailleImageMax.setHeight(666);
+    s_TailleImageMax.setWidth(800);
+    s_TailleImageMax.setHeight(600);
     this->m_TailleInterfaceDeBase.setWidth( this->width() - s_TailleImageMax.width());
     this->m_TailleInterfaceDeBase.setHeight( this->height() - s_TailleImageMax.height());
 
@@ -32,12 +32,14 @@ Qt::Key_Down*/
     switch( event->key() )
     {
     case  Qt::Key_X : {
+        // mettre en pause
         this->m_Pause = !this->m_Pause;
         if (!m_Pause)
             RafraichirAffichage();
     } break;
 
     case Qt::Key_C : {
+        // passer à l'image suivante
         this->m_Pause = false;
         RafraichirAffichage();
     } break;
@@ -84,8 +86,6 @@ void MainWindow::DeclencherDiapo()
     ui->centralWidget->layout()->removeWidget(ui->Interface);
     ui->Interface->setVisible(false);
     ui->imageLabel->update();
-    this->m_TailleInterfaceDeBase.setWidth(0);
-    this->m_TailleInterfaceDeBase.setHeight(0);
     this->RecalculerTailleImageMax();
 }
 
@@ -120,6 +120,8 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 
 void MainWindow::RecalculerTailleImageMax()
 {
+    int w = this->width();
+    int h = this->height();
     s_TailleImageMax.setWidth(this->width() - m_TailleInterfaceDeBase.width());
     s_TailleImageMax.setHeight(this->height() - m_TailleInterfaceDeBase.height());
 }
@@ -161,8 +163,14 @@ void MainWindow::RafraichirAffichage()
             QSize my_size = QSize(ui->imageLabel->widthForHeight(s_TailleImageMax.height()), s_TailleImageMax.height());
             ui->imageLabel->m_Film->setScaledSize(my_size);
 
-            int duree = ui->imageLabel->m_Film->frameCount() * ui->imageLabel->m_Film->nextFrameDelay();
-            m_Timer->start(duree*3);
+            int dureeBase = ui->imageLabel->m_Film->frameCount() * ui->imageLabel->m_Film->nextFrameDelay();
+            int dureeFinale = dureeBase;
+            // répétition du gif suffisament de fois pour atteindre le temps de base
+            while (dureeFinale < m_BaseDureeMs) {
+                dureeFinale += dureeBase;
+            }
+
+            m_Timer->start(dureeFinale);
         }
         else
         {
@@ -173,8 +181,20 @@ void MainWindow::RafraichirAffichage()
             img->load(chemin);
             ui->imageLabel->setPixmap(QPixmap::fromImage(*img));
 
+
+
+            // scale according to width or height ?
+            /*int diffHeight = qAbs( s_TailleImageMax.height() - img->height());
+            int diffWidth = qAbs( s_TailleImageMax.width() - img->width());
+            if ( diffHeight > diffWidth ) {
+                ui->imageLabel->setPixmap(QPixmap::fromImage(*img).scaledToHeight(s_TailleImageMax.height()));
+            } else {
+                ui->imageLabel->setPixmap(QPixmap::fromImage(*img).scaledToWidth(s_TailleImageMax.width()));
+            }*/
+
+
             ui->imageLabel->setMaximumSize(s_TailleImageMax);
-            ui->imageLabel->setMinimumSize(s_TailleImageMax);
+            //ui->imageLabel->setMinimumSize(s_TailleImageMax);
             ui->imageLabel->MajImageSize();
 
             m_Timer->start(m_BaseDureeMs);
