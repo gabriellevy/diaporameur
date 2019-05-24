@@ -93,7 +93,7 @@
             <set>Qt::ImhDigitsOnly|Qt::ImhPreferNumbers</set>
            </property>
            <property name="text">
-            <string>2500</string>
+            <string>3500</string>
            </property>
           </widget>
          </item>

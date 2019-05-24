@@ -27,11 +27,13 @@ CONFIG += c++11
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    aspectratiolabel.cpp
+    aspectratiolabel.cpp \
+    diapoimgref.cpp
 
 HEADERS += \
         mainwindow.h \
-    aspectratiolabel.h
+    aspectratiolabel.h \
+    diapoimgref.h
 
 FORMS += \
         mainwindow.ui

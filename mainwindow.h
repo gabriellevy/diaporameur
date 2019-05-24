@@ -5,16 +5,12 @@
 #include <QMainWindow>
 #include <QTimer>
 #include <QMovie>
+#include <QVector>
+#include "diapoimgref.h"
 
 namespace Ui {
 class MainWindow;
 }
-
-enum TypeImage {
-    ImgFixe,
-    ImgAnim,
-    Toutes
-};
 
 class MainWindow : public QMainWindow
 {
@@ -24,12 +20,14 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    static QString DOSSIER;
+
 private:
     Ui::MainWindow *ui;
 
-    QString m_Dossier = "E:/pic/";
-    QStringList m_ImagesFixes;
-    QStringList m_Gifs;
+    QVector<DiapoImgRef*> m_DiapoImgRefs;
+    DiapoImgRef* m_DiapoImgActuelle = nullptr;
+    PhaseImage m_PhaseImageActuelle = PhaseImage::Intro;
     QTimer* m_Timer;
     int m_BaseDureeMs;
 

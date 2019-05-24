@@ -12,6 +12,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     CHargerImages();
 
+    unsigned int val = QDateTime::currentDateTime ().toTime_t();
+    qsrand(val);
+
     /*s_TailleImageMax.setWidth(ui->imageLabel->width());
     s_TailleImageMax.setHeight(ui->imageLabel->height());*/
     s_TailleImageMax.setWidth(800);
@@ -21,28 +24,43 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //DeclencherDiapo();
     QObject::connect(ui->btnLancerDiaporama, SIGNAL(clicked()), this, SLOT(DeclencherDiapo()));
+
+    setFocusPolicy(Qt::StrongFocus);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-    /*Qt::Key_Left	0x01000012
-Qt::Key_Up	0x01000013
-Qt::Key_Right	0x01000014
-Qt::Key_Down*/
     switch( event->key() )
     {
-    case  Qt::Key_X : {
+    case  Qt::Key_Down : {
         // mettre en pause
         this->m_Pause = !this->m_Pause;
         if (!m_Pause)
             RafraichirAffichage();
     } break;
 
-    case Qt::Key_C : {
+    case Qt::Key_Right : {
         // passer à l'image suivante
         this->m_Pause = false;
         RafraichirAffichage();
     } break;
+    case Qt::Key_1 : {
+        m_DiapoImgActuelle->SetPhase(PhaseImage::Intro);
+    } break;
+    case Qt::Key_2 : {
+        m_DiapoImgActuelle->SetPhase(PhaseImage::Courant);
+    } break;
+    case Qt::Key_3 : {
+        m_DiapoImgActuelle->SetPhase(PhaseImage::Final);
+    } break;
+    case Qt::Key_Space : {
+
+        if ( m_PhaseImageActuelle == PhaseImage::Intro )
+            m_PhaseImageActuelle = PhaseImage::Courant;
+        else if ( m_PhaseImageActuelle == PhaseImage::Courant )
+            m_PhaseImageActuelle = PhaseImage::Final;
+        qDebug() << " phase suivante : " << m_PhaseImageActuelle;
+    }break;
     }
 
     return QWidget::keyPressEvent(event);
@@ -58,14 +76,30 @@ void MainWindow::CHargerImages()
     //qDebug()<<QDir::absolutePath();
     //assume the directory exists and contains some files and you want all jpg and JPG files
     //QDir directory("D:/boulot/QtProjects/Diaporameur/images/");
-    QDir directory(m_Dossier);
-    m_ImagesFixes = directory.entryList(QStringList() << "*.jpg" << "*.JPG"<< "*.PNG"<< "*.png",QDir::Files);
-    m_Gifs = directory.entryList(QStringList() << "*.gif" << "*.GIF",QDir::Files);
+    QDir directory(MainWindow::DOSSIER);
+    QStringList imageFixes = directory.entryList(QStringList() << "*.jpg" << "*.JPG"<< "*.PNG"<< "*.png",QDir::Files);
+    QStringList gifs = directory.entryList(QStringList() << "*.gif" << "*.GIF",QDir::Files);
+
+    // générer toutes les images :
+    int index = 0;
+    while (index < imageFixes.size())
+    {
+        this->m_DiapoImgRefs.push_back(
+                    new DiapoImgRef(TypeImage::ImgFixe, imageFixes[index]));
+        index++;
+    }
+    index = 0;
+    while (index < gifs.size())
+    {
+        this->m_DiapoImgRefs.push_back(
+                    new DiapoImgRef(TypeImage::ImgAnim, gifs[index]));
+        index++;
+    }
 
     QString texte = QString("Nb images : ") +
-            QString::number(m_ImagesFixes.count()) +
+            QString::number(imageFixes.count()) +
             QString(" - nb gifs : ") +
-            QString::number(m_Gifs.count());
+            QString::number(gifs.count());
     ui->texteImagesLabel->setText(texte);
 }
 
@@ -91,10 +125,8 @@ void MainWindow::DeclencherDiapo()
 
 QString MainWindow::DeterminerImage(TypeImage typeImage)
 {
-    unsigned int val = QDateTime::currentDateTime ().toTime_t();
-    qsrand(val);
 
-    int v = qrand() % m_ImagesFixes.length();
+    /*int v = qrand() % m_ImagesFixes.length();
 
     if ( typeImage == TypeImage::ImgAnim ) {
         v = qrand() % m_Gifs.length();
@@ -105,8 +137,35 @@ QString MainWindow::DeterminerImage(TypeImage typeImage)
         return m_Dossier + m_Gifs[v];
     }
 
-    return m_Dossier + m_ImagesFixes[v];
+    return m_Dossier + m_ImagesFixes[v];*/
+
+    int v = -1;
+
+    do {
+        v = qrand() % m_DiapoImgRefs.length();
+    } while (
+             (m_DiapoImgRefs[v]->m_TypeImg != typeImage &&
+             typeImage != TypeImage::Toutes) ||
+             ( m_PhaseImageActuelle != m_DiapoImgRefs[v]->m_PhaseImage /*&&
+               m_DiapoImgRefs[v]->m_PhaseImage != PhaseImage::Inconnu*/ ) );
+
+    /*if ( typeImage == TypeImage::ImgAnim ) {
+        v = qrand() % m_Gifs.length();
+        return m_Dossier + m_ImagesFixes[v];
+    } else if ( typeImage == TypeImage::Toutes ) {
+        v = qrand() % ( m_Gifs.length() + m_ImagesFixes.length());
+        if ( v > m_Gifs.length()) return m_Dossier + m_ImagesFixes[v - m_Gifs.length()];
+        return m_Dossier + m_Gifs[v];
+    }*/
+
+    m_DiapoImgActuelle = m_DiapoImgRefs[v];
+
+    qDebug() << "type image : " << m_DiapoImgActuelle->m_TypeImg << endl;
+
+    return MainWindow::DOSSIER + m_DiapoImgRefs[v]->m_Chemin;
 }
+
+QString MainWindow::DOSSIER = "E:/pic/";
 
 //
 void MainWindow::resizeEvent(QResizeEvent* event)
@@ -122,8 +181,8 @@ void MainWindow::RecalculerTailleImageMax()
 {
     int w = this->width();
     int h = this->height();
-    s_TailleImageMax.setWidth(this->width() - m_TailleInterfaceDeBase.width());
-    s_TailleImageMax.setHeight(this->height() - m_TailleInterfaceDeBase.height());
+    s_TailleImageMax.setWidth(w - m_TailleInterfaceDeBase.width());
+    s_TailleImageMax.setHeight(h - m_TailleInterfaceDeBase.height());
 }
 
 void MainWindow::RafraichirAffichage()
