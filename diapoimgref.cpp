@@ -13,9 +13,6 @@ DiapoImgRef::DiapoImgRef(TypeImage typeImg, QString chemin):m_TypeImg(typeImg), 
         while(!in.atEnd()) {
             QString line = in.readLine();
             m_PhaseImage = static_cast<PhaseImage>(line.toInt());
-            //QStringList fields = line.split(",");
-            //model->appendRow(fields);
-            qDebug() << "chargement -- m_PhaseImage : " << m_PhaseImage<<endl;
         }
 
         file.close();

@@ -25,6 +25,7 @@ public:
 private:
     Ui::MainWindow *ui;
 
+    QVector<DiapoImgRef*> m_HistoriqueDiapoImgRefs;
     QVector<DiapoImgRef*> m_DiapoImgRefs;
     DiapoImgRef* m_DiapoImgActuelle = nullptr;
     PhaseImage m_PhaseImageActuelle = PhaseImage::Intro;
@@ -50,7 +51,7 @@ private:
     bool m_Pause = false;
 
 private slots:
-    void RafraichirAffichage();
+    void RafraichirAffichage(bool chercherNouvelleImage = true);
     void DeclencherDiapo();
 };
 

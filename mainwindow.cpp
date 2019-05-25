@@ -44,6 +44,17 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         this->m_Pause = false;
         RafraichirAffichage();
     } break;
+    case Qt::Key_Left : {
+        // retour à l'image précédente
+        if ( m_HistoriqueDiapoImgRefs.length() > 1) {
+            this->m_Pause = false;
+            m_HistoriqueDiapoImgRefs.pop_back();
+            m_DiapoImgActuelle = m_HistoriqueDiapoImgRefs.last();
+            RafraichirAffichage(false);
+        } else {
+        qDebug() << "retour à l'image précédente impossible : il n'y a aps d'image précédente";
+        }
+    } break;
     case Qt::Key_1 : {
         m_DiapoImgActuelle->SetPhase(PhaseImage::Intro);
     } break;
@@ -59,7 +70,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             m_PhaseImageActuelle = PhaseImage::Courant;
         else if ( m_PhaseImageActuelle == PhaseImage::Courant )
             m_PhaseImageActuelle = PhaseImage::Final;
-        qDebug() << " phase suivante : " << m_PhaseImageActuelle;
+        RafraichirAffichage();
     }break;
     }
 
@@ -146,8 +157,8 @@ QString MainWindow::DeterminerImage(TypeImage typeImage)
     } while (
              (m_DiapoImgRefs[v]->m_TypeImg != typeImage &&
              typeImage != TypeImage::Toutes) ||
-             ( m_PhaseImageActuelle != m_DiapoImgRefs[v]->m_PhaseImage /*&&
-               m_DiapoImgRefs[v]->m_PhaseImage != PhaseImage::Inconnu*/ ) );
+             ( m_PhaseImageActuelle != m_DiapoImgRefs[v]->m_PhaseImage &&
+               m_DiapoImgRefs[v]->m_PhaseImage != PhaseImage::Inconnu ) );
 
     /*if ( typeImage == TypeImage::ImgAnim ) {
         v = qrand() % m_Gifs.length();
@@ -159,8 +170,7 @@ QString MainWindow::DeterminerImage(TypeImage typeImage)
     }*/
 
     m_DiapoImgActuelle = m_DiapoImgRefs[v];
-
-    qDebug() << "type image : " << m_DiapoImgActuelle->m_TypeImg << endl;
+    m_HistoriqueDiapoImgRefs.push_back(m_DiapoImgActuelle);
 
     return MainWindow::DOSSIER + m_DiapoImgRefs[v]->m_Chemin;
 }
@@ -185,7 +195,7 @@ void MainWindow::RecalculerTailleImageMax()
     s_TailleImageMax.setHeight(h - m_TailleInterfaceDeBase.height());
 }
 
-void MainWindow::RafraichirAffichage()
+void MainWindow::RafraichirAffichage(bool chercherNouvelleImage)
 {
     if ( m_Pause ) return;
 
@@ -202,7 +212,16 @@ void MainWindow::RafraichirAffichage()
         ui->imageLabel->m_Pixel = nullptr;
     }
 
-    QString chemin = DeterminerImage(TypeImage::Toutes);
+    QString chemin = "";
+    if ( chercherNouvelleImage ) {
+        chemin = DeterminerImage(TypeImage::Toutes);
+    }
+    else {
+        if ( this->m_DiapoImgActuelle == nullptr ) {
+            qDebug() << "Affichage impossible";
+            return;
+        } else chemin = MainWindow::DOSSIER + this->m_DiapoImgActuelle->m_Chemin;
+    }
 
     ui->imageLabel->clear();
 
