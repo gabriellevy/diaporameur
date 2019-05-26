@@ -49,10 +49,13 @@ private:
     // controles :
     void keyPressEvent(QKeyEvent *event) override;
     bool m_Pause = false;
+    void Pause(bool forceRedemarrage = false, bool chercherNouvelleImage = true);
+    void NettoyerAffichage();
 
 private slots:
     void RafraichirAffichage(bool chercherNouvelleImage = true);
     void DeclencherDiapo();
+    void SupprimerImage();
 };
 
 #endif // MAINWINDOW_H

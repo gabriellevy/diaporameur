@@ -15,8 +15,6 @@ MainWindow::MainWindow(QWidget *parent) :
     unsigned int val = QDateTime::currentDateTime ().toTime_t();
     qsrand(val);
 
-    /*s_TailleImageMax.setWidth(ui->imageLabel->width());
-    s_TailleImageMax.setHeight(ui->imageLabel->height());*/
     s_TailleImageMax.setWidth(800);
     s_TailleImageMax.setHeight(600);
     this->m_TailleInterfaceDeBase.setWidth( this->width() - s_TailleImageMax.width());
@@ -24,8 +22,22 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //DeclencherDiapo();
     QObject::connect(ui->btnLancerDiaporama, SIGNAL(clicked()), this, SLOT(DeclencherDiapo()));
+    QObject::connect(ui->btnSupprimerImg, SIGNAL(clicked()), this, SLOT(SupprimerImage()));
 
     setFocusPolicy(Qt::StrongFocus);
+}
+
+void MainWindow::Pause(bool forceRedemarrage, bool chercherNouvelleImage)
+{
+    bool redemarre = this->m_Pause || forceRedemarrage;
+    this->m_Pause = !redemarre;
+
+    ui->Interface->setVisible(!redemarre);
+    ui->imageLabel->update();
+    ui->texteImagesLabel->setText(this->m_DiapoImgActuelle->m_Chemin);
+
+    if (!m_Pause)
+        RafraichirAffichage(chercherNouvelleImage);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -34,23 +46,19 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
     case  Qt::Key_Down : {
         // mettre en pause
-        this->m_Pause = !this->m_Pause;
-        if (!m_Pause)
-            RafraichirAffichage();
+        Pause();
     } break;
 
     case Qt::Key_Right : {
         // passer à l'image suivante
-        this->m_Pause = false;
-        RafraichirAffichage();
+        this->Pause(true);
     } break;
     case Qt::Key_Left : {
         // retour à l'image précédente
         if ( m_HistoriqueDiapoImgRefs.length() > 1) {
-            this->m_Pause = false;
             m_HistoriqueDiapoImgRefs.pop_back();
             m_DiapoImgActuelle = m_HistoriqueDiapoImgRefs.last();
-            RafraichirAffichage(false);
+            this->Pause(true, false);
         } else {
         qDebug() << "retour à l'image précédente impossible : il n'y a aps d'image précédente";
         }
@@ -114,9 +122,30 @@ void MainWindow::CHargerImages()
     ui->texteImagesLabel->setText(texte);
 }
 
+void MainWindow::SupprimerImage()
+{
+    qDebug() << "supprimer mage" << this->m_DiapoImgActuelle->GetCheminCompletImg();
+    qDebug() << "supprimer bibli : " << this->m_DiapoImgActuelle->GetCheminCompletFichierBibli();
+    // impossible de supprimer une image hors du mode pause
+    if ( m_Pause)
+    {
+        this->NettoyerAffichage();
+
+        qDebug() << "supprimer mage --- m_Pause";
+        // supprimer le fichier associé :
+        QFile fichierBibli(this->m_DiapoImgActuelle->GetCheminCompletFichierBibli());
+
+        fichierBibli.close();
+        qDebug() << "suppression fichier bibli : " << fichierBibli.remove();
+
+        QFile fichierImg(this->m_DiapoImgActuelle->GetCheminCompletImg());
+        fichierImg.close();
+        qDebug() << "suppression fichier img : " << fichierImg.remove();
+    }
+}
+
 void MainWindow::DeclencherDiapo()
 {
-
     // lancer le timer :
     m_Timer = new QTimer(this);
     m_Timer->setSingleShot(true);
@@ -128,7 +157,7 @@ void MainWindow::DeclencherDiapo()
 
     // tout cacher :
     //ui->Interface->setMaximumHeight(0);
-    ui->centralWidget->layout()->removeWidget(ui->Interface);
+    //ui->centralWidget->layout()->removeWidget(ui->Interface);
     ui->Interface->setVisible(false);
     ui->imageLabel->update();
     this->RecalculerTailleImageMax();
@@ -136,20 +165,6 @@ void MainWindow::DeclencherDiapo()
 
 QString MainWindow::DeterminerImage(TypeImage typeImage)
 {
-
-    /*int v = qrand() % m_ImagesFixes.length();
-
-    if ( typeImage == TypeImage::ImgAnim ) {
-        v = qrand() % m_Gifs.length();
-        return m_Dossier + m_ImagesFixes[v];
-    } else if ( typeImage == TypeImage::Toutes ) {
-        v = qrand() % ( m_Gifs.length() + m_ImagesFixes.length());
-        if ( v > m_Gifs.length()) return m_Dossier + m_ImagesFixes[v - m_Gifs.length()];
-        return m_Dossier + m_Gifs[v];
-    }
-
-    return m_Dossier + m_ImagesFixes[v];*/
-
     int v = -1;
 
     do {
@@ -195,10 +210,8 @@ void MainWindow::RecalculerTailleImageMax()
     s_TailleImageMax.setHeight(h - m_TailleInterfaceDeBase.height());
 }
 
-void MainWindow::RafraichirAffichage(bool chercherNouvelleImage)
+void MainWindow::NettoyerAffichage()
 {
-    if ( m_Pause ) return;
-
     bool afficheFilm = (ui->imageLabel->m_Film != nullptr);
     if ( afficheFilm ) {
         ui->imageLabel->m_Film->stop();
@@ -211,6 +224,13 @@ void MainWindow::RafraichirAffichage(bool chercherNouvelleImage)
         delete ui->imageLabel->m_Pixel;
         ui->imageLabel->m_Pixel = nullptr;
     }
+}
+
+void MainWindow::RafraichirAffichage(bool chercherNouvelleImage)
+{
+    if ( m_Pause ) return;
+
+    this->NettoyerAffichage();
 
     QString chemin = "";
     if ( chercherNouvelleImage ) {

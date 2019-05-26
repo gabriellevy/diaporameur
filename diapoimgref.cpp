@@ -5,7 +5,7 @@
 
 DiapoImgRef::DiapoImgRef(TypeImage typeImg, QString chemin):m_TypeImg(typeImg), m_Chemin(chemin), m_PhaseImage(PhaseImage::Inconnu)
 {
-    QFile file( GetCheminComplet() );
+    QFile file( GetCheminCompletFichierBibli() );
     if(file.open(QIODevice::ReadOnly)) {
 
         QTextStream in(&file);
@@ -19,7 +19,12 @@ DiapoImgRef::DiapoImgRef(TypeImage typeImg, QString chemin):m_TypeImg(typeImg), 
     }
 }
 
-QString DiapoImgRef::GetCheminComplet()
+QString DiapoImgRef::GetCheminCompletImg()
+{
+    return MainWindow::DOSSIER + this->m_Chemin;
+}
+
+QString DiapoImgRef::GetCheminCompletFichierBibli()
 {
     return MainWindow::DOSSIER + this->m_Chemin+ ".diap";
 }
@@ -28,7 +33,7 @@ void DiapoImgRef::SetPhase(PhaseImage phase)
 {
     m_PhaseImage = phase;
 
-    QFile file( GetCheminComplet() );
+    QFile file( GetCheminCompletFichierBibli() );
     if ( file.open(QIODevice::ReadWrite) )
     {
         QTextStream stream( &file );

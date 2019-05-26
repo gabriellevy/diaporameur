@@ -29,7 +29,8 @@ public:
     PhaseImage m_PhaseImage;
 
     void SetPhase(PhaseImage phase);
-    QString GetCheminComplet();
+    QString GetCheminCompletImg();
+    QString GetCheminCompletFichierBibli();
 };
 
 #endif // DIAPOIMGREF_H
