@@ -22,6 +22,8 @@ public:
 
     static QString DOSSIER;
 
+    QTimer* GetTimer();
+
 private:
     Ui::MainWindow *ui;
 
@@ -29,7 +31,7 @@ private:
     QVector<DiapoImgRef*> m_DiapoImgRefs;
     DiapoImgRef* m_DiapoImgActuelle = nullptr;
     PhaseImage m_PhaseImageActuelle = PhaseImage::Intro;
-    QTimer* m_Timer;
+    QTimer* m_Timer = nullptr;
     int m_BaseDureeMs;
 
     void CHargerImages();
@@ -53,7 +55,7 @@ private:
     void NettoyerAffichage();
 
 private slots:
-    void RafraichirAffichage(bool chercherNouvelleImage = true);
+    void RafraichirAffichage(bool chercherNouvelleImage = true, TypeImage typeImage = TypeImage::Toutes);
     void DeclencherDiapo();
     void SupprimerImage();
 };

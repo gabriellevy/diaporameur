@@ -9,14 +9,14 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+    s_TailleImageMax.setWidth(800);
+    s_TailleImageMax.setHeight(600);
     ui->setupUi(this);
     CHargerImages();
 
     unsigned int val = QDateTime::currentDateTime ().toTime_t();
     qsrand(val);
 
-    s_TailleImageMax.setWidth(800);
-    s_TailleImageMax.setHeight(600);
     this->m_TailleInterfaceDeBase.setWidth( this->width() - s_TailleImageMax.width());
     this->m_TailleInterfaceDeBase.setHeight( this->height() - s_TailleImageMax.height());
 
@@ -78,6 +78,13 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             m_PhaseImageActuelle = PhaseImage::Courant;
         else if ( m_PhaseImageActuelle == PhaseImage::Courant )
             m_PhaseImageActuelle = PhaseImage::Final;
+        else {
+            m_PhaseImageActuelle = PhaseImage::Intro;
+        }
+        // accélération du défilement à la fin :
+        if ( m_PhaseImageActuelle == PhaseImage::Final )
+            m_BaseDureeMs = m_BaseDureeMs/3;
+
         RafraichirAffichage();
     }break;
     }
@@ -144,16 +151,24 @@ void MainWindow::SupprimerImage()
     }
 }
 
+QTimer* MainWindow::GetTimer()
+{
+    if ( m_Timer == nullptr ) {
+        // lancer le timer :
+        m_Timer = new QTimer(this);
+        m_Timer->setSingleShot(true);
+    }
+    return m_Timer;
+}
+
 void MainWindow::DeclencherDiapo()
 {
-    // lancer le timer :
-    m_Timer = new QTimer(this);
-    m_Timer->setSingleShot(true);
     //m_Timer->setSingleShot(true);
-    connect(m_Timer, SIGNAL(timeout()), SLOT(RafraichirAffichage()));
+    connect(GetTimer(), SIGNAL(timeout()), SLOT(RafraichirAffichage()));
+    connect(ui->imageLabel, SIGNAL(clicked()), this, SLOT(RafraichirAffichage()));
     QLineEdit* input = static_cast<QLineEdit*>(ui->inputDureeDiapo);
     m_BaseDureeMs = (input->text().toInt());
-    m_Timer->start(m_BaseDureeMs);
+    GetTimer()->start(m_BaseDureeMs);
 
     // tout cacher :
     //ui->Interface->setMaximumHeight(0);
@@ -190,7 +205,8 @@ QString MainWindow::DeterminerImage(TypeImage typeImage)
     return MainWindow::DOSSIER + m_DiapoImgRefs[v]->m_Chemin;
 }
 
-QString MainWindow::DOSSIER = "E:/pic/";
+//QString MainWindow::DOSSIER = "G:/pic/";
+QString MainWindow::DOSSIER = "./pic/";
 
 //
 void MainWindow::resizeEvent(QResizeEvent* event)
@@ -204,6 +220,7 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 
 void MainWindow::RecalculerTailleImageMax()
 {
+    this->RafraichirAffichage(true, TypeImage::ImgFixe);
     int w = this->width();
     int h = this->height();
     s_TailleImageMax.setWidth(w - m_TailleInterfaceDeBase.width());
@@ -226,15 +243,16 @@ void MainWindow::NettoyerAffichage()
     }
 }
 
-void MainWindow::RafraichirAffichage(bool chercherNouvelleImage)
+void MainWindow::RafraichirAffichage(bool chercherNouvelleImage, TypeImage typeImage)
 {
+    qDebug() << "RafraichirAffichage" <<endl;
     if ( m_Pause ) return;
 
     this->NettoyerAffichage();
 
     QString chemin = "";
     if ( chercherNouvelleImage ) {
-        chemin = DeterminerImage(TypeImage::Toutes);
+        chemin = DeterminerImage(typeImage);
     }
     else {
         if ( this->m_DiapoImgActuelle == nullptr ) {
@@ -242,6 +260,7 @@ void MainWindow::RafraichirAffichage(bool chercherNouvelleImage)
             return;
         } else chemin = MainWindow::DOSSIER + this->m_DiapoImgActuelle->m_Chemin;
     }
+    //qDebug()<< "chemin : "<< chemin << endl;
 
     ui->imageLabel->clear();
 
@@ -255,20 +274,22 @@ void MainWindow::RafraichirAffichage(bool chercherNouvelleImage)
             ui->imageLabel->m_Film = new QMovie(chemin);
             ui->imageLabel->setMovie(ui->imageLabel->m_Film);
             ui->imageLabel->m_Film->start();
-            ui->imageLabel->m_Film->jumpToNextFrame();
+            int dureeBase = ui->imageLabel->m_Film->frameCount() * ui->imageLabel->m_Film->nextFrameDelay();
+            //ui->imageLabel->m_Film->jumpToNextFrame();
 
             //ui->imageLabel->setScaledContents(true);
             QSize my_size = QSize(ui->imageLabel->widthForHeight(s_TailleImageMax.height()), s_TailleImageMax.height());
             ui->imageLabel->m_Film->setScaledSize(my_size);
 
-            int dureeBase = ui->imageLabel->m_Film->frameCount() * ui->imageLabel->m_Film->nextFrameDelay();
             int dureeFinale = dureeBase;
+            int nbRepetition = 1;
             // répétition du gif suffisament de fois pour atteindre le temps de base
             while (dureeFinale < m_BaseDureeMs) {
                 dureeFinale += dureeBase;
+                nbRepetition++;
             }
 
-            m_Timer->start(dureeFinale);
+            GetTimer()->start(dureeFinale);
         }
         else
         {
@@ -279,8 +300,6 @@ void MainWindow::RafraichirAffichage(bool chercherNouvelleImage)
             img->load(chemin);
             ui->imageLabel->setPixmap(QPixmap::fromImage(*img));
 
-
-
             // scale according to width or height ?
             /*int diffHeight = qAbs( s_TailleImageMax.height() - img->height());
             int diffWidth = qAbs( s_TailleImageMax.width() - img->width());
@@ -290,12 +309,11 @@ void MainWindow::RafraichirAffichage(bool chercherNouvelleImage)
                 ui->imageLabel->setPixmap(QPixmap::fromImage(*img).scaledToWidth(s_TailleImageMax.width()));
             }*/
 
-
             ui->imageLabel->setMaximumSize(s_TailleImageMax);
             //ui->imageLabel->setMinimumSize(s_TailleImageMax);
             ui->imageLabel->MajImageSize();
 
-            m_Timer->start(m_BaseDureeMs);
+            GetTimer()->start(m_BaseDureeMs);
         }
     }
 

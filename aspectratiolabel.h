@@ -21,12 +21,16 @@ public:
     QPixmap* m_Pixel = nullptr;
     QMovie* m_Film = nullptr;
 
+signals:
+    void clicked();
+
 public slots:
     void setPixmap(const QPixmap& pm);
     void setMovie(QMovie* mv);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
+    void mousePressEvent(QMouseEvent* event);
 
 private:
     void updateMargins();

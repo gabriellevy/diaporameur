@@ -58,6 +58,10 @@ QPixmap AspectRatioLabel::scaledPixmap() const
     return m_Pixel->scaled(this->maximumSize(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
 }
 
+void AspectRatioLabel::mousePressEvent(QMouseEvent* event) {
+    emit clicked();
+}
+
 void AspectRatioLabel::resizeEvent(QResizeEvent* event)
 {
     updateMargins();
