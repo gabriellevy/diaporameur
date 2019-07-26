@@ -205,8 +205,8 @@ QString MainWindow::DeterminerImage(TypeImage typeImage)
     return MainWindow::DOSSIER + m_DiapoImgRefs[v]->m_Chemin;
 }
 
-//QString MainWindow::DOSSIER = "G:/pic/";
-QString MainWindow::DOSSIER = "./pic/";
+QString MainWindow::DOSSIER = "G:/pic/";
+//QString MainWindow::DOSSIER = "./pic/";
 
 //
 void MainWindow::resizeEvent(QResizeEvent* event)
@@ -274,8 +274,10 @@ void MainWindow::RafraichirAffichage(bool chercherNouvelleImage, TypeImage typeI
             ui->imageLabel->m_Film = new QMovie(chemin);
             ui->imageLabel->setMovie(ui->imageLabel->m_Film);
             ui->imageLabel->m_Film->start();
+            ui->imageLabel->m_Film->jumpToNextFrame();
             int dureeBase = ui->imageLabel->m_Film->frameCount() * ui->imageLabel->m_Film->nextFrameDelay();
-            //ui->imageLabel->m_Film->jumpToNextFrame();
+            if ( dureeBase == 0 )
+                dureeBase = m_BaseDureeMs;
 
             //ui->imageLabel->setScaledContents(true);
             QSize my_size = QSize(ui->imageLabel->widthForHeight(s_TailleImageMax.height()), s_TailleImageMax.height());
@@ -284,7 +286,7 @@ void MainWindow::RafraichirAffichage(bool chercherNouvelleImage, TypeImage typeI
             int dureeFinale = dureeBase;
             int nbRepetition = 1;
             // répétition du gif suffisament de fois pour atteindre le temps de base
-            while (dureeFinale < m_BaseDureeMs) {
+            while (dureeFinale < m_BaseDureeMs ) {
                 dureeFinale += dureeBase;
                 nbRepetition++;
             }
